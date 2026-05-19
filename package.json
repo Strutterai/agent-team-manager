@@ -1,13 +1,36 @@
 {
   "name": "agent-team-manager",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "Visual org chart designer for Claude Code agent teams. Edit nodes, draw delegation lines, auto-sync to .claude/agents/*.md.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/strutter-ai/agent-team-manager.git"
+  },
+  "homepage": "https://github.com/strutter-ai/agent-team-manager#readme",
+  "bugs": {
+    "url": "https://github.com/strutter-ai/agent-team-manager/issues"
+  },
+  "author": "Strutter AI",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude",
+    "agents",
+    "org-chart",
+    "visualization",
+    "react-flow"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "dev": "concurrently \"tsx watch server/index.ts\" \"vite\"",
     "server": "tsx server/index.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -36,6 +59,7 @@
     "tsx": "^4.22.2",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "vitest": "^4.1.6"
   }
 }

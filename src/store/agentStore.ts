@@ -64,6 +64,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       selectedAgentId: s.selectedAgentId === id ? null : s.selectedAgentId,
     }))
     get().saveChart()
+    debouncedSyncDelegations(get)
   },
 
   selectAgent: (id) => set({ selectedAgentId: id }),
@@ -74,6 +75,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       delegations: [...s.delegations, { id, from, to, reason: '' }],
     }))
     get().saveChart()
+    debouncedSyncDelegations(get)
   },
 
   updateDelegation: (id, patch) => {
@@ -81,16 +83,18 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       delegations: s.delegations.map((d) => (d.id === id ? { ...d, ...patch } : d)),
     }))
     debouncedSave(get)
+    debouncedSyncDelegations(get)
   },
 
   removeDelegation: (id) => {
     set((s) => ({ delegations: s.delegations.filter((d) => d.id !== id) }))
     get().saveChart()
+    debouncedSyncDelegations(get)
   },
 
   setOutputDir: (dir) => {
     set({ outputDirectory: dir })
-    debouncedSave(get)
+    debouncedReload(get, dir)
   },
 
   saveChart: async () => {
@@ -102,6 +106,46 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     })
   },
 }))
+
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+
+function debouncedSyncDelegations(get: () => AgentStore) {
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(async () => {
+    const { outputDirectory, agents, delegations } = get()
+    if (!outputDirectory || agents.length === 0) return
+    try {
+      await fetch('/api/sync-delegations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outputDirectory, agents, delegations }),
+      })
+    } catch (err) {
+      console.error('Sync delegations failed:', err)
+    }
+  }, 800)
+}
+
+let reloadTimer: ReturnType<typeof setTimeout> | null = null
+
+function debouncedReload(get: () => AgentStore, directory: string) {
+  if (reloadTimer) clearTimeout(reloadTimer)
+  reloadTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/reload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outputDirectory: directory }),
+      })
+      if (!res.ok) return
+      const data = (await res.json()) as OrgChart
+      get().loadChart(data)
+      get().saveChart()
+    } catch (err) {
+      console.error('Reload failed:', err)
+    }
+  }, 600)
+}
 
 function debouncedSave(get: () => AgentStore) {
   if (saveTimer) clearTimeout(saveTimer)

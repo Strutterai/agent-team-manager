@@ -16,22 +16,30 @@ export function AgentNode({ data, selected }: NodeProps<AgentNodeType>) {
   return (
     <div
       className={`
-        min-w-[160px] rounded-lg border-2 bg-white px-4 py-3 shadow-sm
-        transition-colors
-        ${selected ? 'border-blue-500 shadow-blue-100 shadow-md' : 'border-gray-200 hover:border-gray-300'}
+        relative min-w-[200px] max-w-[260px] rounded-lg border bg-surface-2 px-4 py-3 shadow-lg
+        transition-all duration-150
+        ${selected
+          ? 'border-brand shadow-[0_0_0_3px_rgba(82,183,136,0.2)]'
+          : 'border-border-1 hover:border-border-2'}
       `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-gray-400" />
-      <div className="text-sm font-semibold text-gray-900 leading-tight">
-        {data.title || data.name || 'Unnamed Agent'}
+      <Handle type="target" position={Position.Top} />
+
+      <div className="font-display text-lg leading-none tracking-wide text-text-1">
+        {data.title || data.name || 'UNNAMED AGENT'}
       </div>
-      {data.name && data.title && (
-        <div className="mt-0.5 text-xs text-gray-400 font-mono">{data.name}</div>
+      {data.name && (
+        <div className="mt-1 font-mono text-[10px] text-brand uppercase tracking-wider">
+          {data.name}
+        </div>
       )}
       {data.role && (
-        <div className="mt-1.5 text-xs text-gray-500 leading-snug line-clamp-2">{data.role}</div>
+        <div className="mt-2 text-xs text-text-2 leading-snug line-clamp-3">
+          {data.role}
+        </div>
       )}
-      <Handle type="source" position={Position.Bottom} className="!bg-gray-400" />
+
+      <Handle type="source" position={Position.Bottom} />
     </div>
   )
 }

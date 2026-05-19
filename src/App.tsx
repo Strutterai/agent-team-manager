@@ -17,14 +17,14 @@ export default function App() {
   }, [loadChart])
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-surface-1">
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-hidden">
           <OrgChart />
         </div>
         {selectedAgentId && (
-          <div className="w-80 shrink-0 overflow-y-auto border-l border-gray-100 bg-white shadow-sm">
+          <div className="w-96 shrink-0 overflow-y-auto border-l border-border-1 bg-surface-2 shadow-2xl">
             <AgentPanel />
           </div>
         )}

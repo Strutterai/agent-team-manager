@@ -1,73 +1,79 @@
-# React + TypeScript + Vite
+# Agent Team Manager
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Visual org chart designer for [Claude Code](https://claude.com/claude-code) agent teams. Built by [Strutter AI](https://strutterai.com).
 
-Currently, two official plugins are available:
+Edit your agents as cards. Draw delegation lines as edges. The tool writes everything back to `.claude/agents/*.md` so Claude reads the org chart at session start and knows who delegates to whom.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![Agent Team Manager screenshot](docs/screenshot.png)
 
-## React Compiler
+## What it does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Visual canvas** — every agent is a card. Drag to rearrange. Click to edit Name, Title, Role, Responsibilities, Goals.
+- **Draw delegation lines** — connect any two agents and label the relationship. Lines auto-save to each agent's `## Delegation` section so Claude reads them.
+- **Live filesystem** — the tool reads and writes `.claude/agents/*.md` directly. There's no separate database. Edit a file in your editor, reload the canvas, your change shows up.
+- **Bootstrap with Claude** — first time using it? Click "⚡ Bootstrap with Claude" in the toolbar to get a ready-to-paste prompt that has Claude design and write your initial team.
 
-## Expanding the ESLint configuration
+## Quick start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Requires Node 20+.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+git clone https://github.com/strutter-ai/agent-team-manager.git
+cd agent-team-manager
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then open http://localhost:5173 in your browser.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+On first load, the tool reads from the demo `.claude/agents/` folder shipped with this repo so you have something to play with. To point it at your own project, type the path to your project's `.claude` folder in the "Agents directory" field at the top right.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## How it works
+
 ```
+                  ┌──────────────┐
+   Your edits ───►│   Canvas     │
+                  │ (React Flow) │
+                  └──────┬───────┘
+                         │
+                  ┌──────▼───────┐
+                  │ Express API  │
+                  │   :3001      │
+                  └──┬────────┬──┘
+                     │        │
+            ┌────────▼─┐  ┌───▼───────────────────┐
+            │org-chart │  │ .claude/agents/*.md   │
+            │  .json   │  │ Role, Resp, Goals,    │
+            │positions │  │ ## Delegation         │
+            │+ edges   │  │                       │
+            └──────────┘  └───────────────────────┘
+```
+
+Canvas state (positions, which edges exist) lives in `org-chart.json` per-user. Actual agent content lives in `.claude/agents/*.md` — the same files Claude Code reads at session start. When you draw or edit a delegation edge, the tool surgically updates only the `## Delegation` section of the affected agent files, preserving everything else.
+
+## Use with Claude Code
+
+1. Point Agent Team Manager at your project's `.claude` folder.
+2. Design your team visually: add agents, drag delegation lines, write reasons.
+3. Open Claude Code in the same project. Claude reads `.claude/agents/*.md` at session start and sees the delegation graph you built.
+4. When Claude delegates work, it follows the "Delegates to" lines you drew. Reviewers see who reports to them via the "Reports to" lines.
+
+The org chart literally programs how Claude routes work across specialists.
+
+## Tech stack
+
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, [React Flow](https://reactflow.dev/), Zustand
+- **Backend**: Express (one small server for filesystem reads/writes)
+- **Format**: Plain markdown — your agent files stay readable, diffable, and editable outside the tool
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs welcome.
+
+## License
+
+[MIT](LICENSE) — use it, fork it, ship it.
+
+---
+
+Built by [Strutter AI](https://strutterai.com) 🦃 — the only RFP platform built for both issuers and responders.

@@ -33,7 +33,7 @@ export function DelegationEdge({
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} style={{ stroke: '#94a3b8', strokeWidth: 2 }} />
+      <BaseEdge id={id} path={edgePath} style={{ stroke: '#52b788', strokeWidth: 2 }} />
       <EdgeLabelRenderer>
         <div
           style={{
@@ -54,7 +54,7 @@ export function DelegationEdge({
                 if (e.key === 'Escape') setEditing(false)
               }}
               placeholder="Reason for delegation..."
-              className="rounded border border-blue-400 bg-white px-2 py-1 text-xs shadow-md outline-none w-48"
+              className="rounded border border-brand bg-surface-2 px-2 py-1 text-xs text-text-1 shadow-lg outline-none w-56"
             />
           ) : (
             <button
@@ -63,15 +63,15 @@ export function DelegationEdge({
                 setEditing(true)
               }}
               className={`
-                rounded border px-2 py-0.5 text-xs shadow-sm transition-colors
+                rounded border px-2 py-0.5 text-xs shadow-md transition-colors
                 ${data?.reason
-                  ? 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  : 'border-dashed border-gray-300 bg-gray-50 text-gray-400 hover:border-gray-400'
+                  ? 'border-brand/40 bg-surface-2 text-text-2 hover:border-brand'
+                  : 'border-dashed border-border-2 bg-surface-2/80 text-text-3 hover:border-brand hover:text-brand'
                 }
               `}
               title="Double-click to edit delegation reason"
             >
-              {(data?.reason as string) || 'double-click to add reason'}
+              {(data?.reason as string) || 'double-click to label'}
             </button>
           )}
         </div>

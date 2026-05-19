@@ -1,7 +1,14 @@
 import { Router, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
-import { OrgChart, Agent, Delegation } from '../../src/types/agent.js'
+import type { OrgChart, Agent, Delegation } from '../../src/types/agent.js'
+import {
+  buildClaudeMd,
+  buildDelegationSection,
+  parseAgentMd,
+  replaceDelegationSection,
+} from '../lib/agent-md.js'
+import { expandHome } from '../lib/paths.js'
 
 export const router = Router()
 
@@ -15,13 +22,14 @@ const defaultChart: OrgChart = {
 
 router.get('/chart', (_req: Request, res: Response) => {
   try {
-    if (!fs.existsSync(CHART_FILE)) {
-      return res.json(defaultChart)
-    }
-    const data = fs.readFileSync(CHART_FILE, 'utf-8')
-    res.json(JSON.parse(data))
-  } catch {
-    res.json(defaultChart)
+    const chart: OrgChart = fs.existsSync(CHART_FILE)
+      ? JSON.parse(fs.readFileSync(CHART_FILE, 'utf-8'))
+      : defaultChart
+
+    const merged = mergeWithDisk(chart)
+    res.json(merged)
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
   }
 })
 
@@ -34,10 +42,26 @@ router.post('/chart', (req: Request, res: Response) => {
   }
 })
 
+// Re-read agents from disk for a given directory, merged with any saved
+// positions/delegations. Used when the user changes the directory.
+router.post('/reload', (req: Request, res: Response) => {
+  try {
+    const { outputDirectory } = req.body as { outputDirectory: string }
+    const chart: OrgChart = fs.existsSync(CHART_FILE)
+      ? JSON.parse(fs.readFileSync(CHART_FILE, 'utf-8'))
+      : defaultChart
+    chart.outputDirectory = outputDirectory
+    const merged = mergeWithDisk(chart)
+    res.json(merged)
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
+  }
+})
+
 router.post('/export', (req: Request, res: Response) => {
   try {
     const chart: OrgChart = req.body
-    const agentsDir = path.join(chart.outputDirectory, 'agents')
+    const agentsDir = path.join(expandHome(chart.outputDirectory), 'agents')
 
     fs.mkdirSync(agentsDir, { recursive: true })
 
@@ -55,44 +79,102 @@ router.post('/export', (req: Request, res: Response) => {
   }
 })
 
-function buildClaudeMd(agent: Agent, delegations: Delegation[], allAgents: Agent[]): string {
-  const outgoing = delegations.filter((d) => d.from === agent.id)
-  const incoming = delegations.filter((d) => d.to === agent.id)
+// Save a single agent's .md file. Writes Role/Responsibilities/Goals/Delegation
+// from the panel state and creates the file if it doesn't exist.
+router.post('/save-agent', (req: Request, res: Response) => {
+  try {
+    const { outputDirectory, agent, agents, delegations } = req.body as {
+      outputDirectory: string
+      agent: Agent
+      agents: Agent[]
+      delegations: Delegation[]
+    }
+    const agentsDir = path.join(expandHome(outputDirectory), 'agents')
+    fs.mkdirSync(agentsDir, { recursive: true })
 
-  const lines: string[] = [
-    `# ${agent.title || agent.name}`,
-    '',
-    '## Role',
-    agent.role || '',
-    '',
-    '## Responsibilities',
-    agent.responsibilities || '',
-    '',
-    '## Goals',
-    agent.goals || '',
-  ]
+    const filePath = path.join(agentsDir, `${agent.name}.md`)
+    const content = buildClaudeMd(agent, delegations, agents)
+    fs.writeFileSync(filePath, content)
 
-  if (outgoing.length > 0 || incoming.length > 0) {
-    lines.push('', '## Delegation')
+    res.json({ ok: true, file: filePath })
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
+  }
+})
 
-    if (incoming.length > 0) {
-      const parents = incoming.map((d) => {
-        const parent = allAgents.find((a) => a.id === d.from)
-        return parent?.title || parent?.name || d.from
-      })
-      lines.push(`Reports to: ${parents.join(', ')}`)
+// Surgically update only the ## Delegation section in each agent's .md file.
+// Preserves all other content (Role, Responsibilities, Goals, custom sections).
+router.post('/sync-delegations', (req: Request, res: Response) => {
+  try {
+    const chart: OrgChart = req.body
+    const agentsDir = path.join(expandHome(chart.outputDirectory), 'agents')
+
+    if (!fs.existsSync(agentsDir)) {
+      return res.status(404).json({ error: `No agents/ folder at ${agentsDir}` })
     }
 
-    if (outgoing.length > 0) {
-      lines.push('', 'Delegates to:')
-      for (const d of outgoing) {
-        const child = allAgents.find((a) => a.id === d.to)
-        const childName = child?.title || child?.name || d.to
-        lines.push(`- **${childName}** — ${d.reason || 'no reason specified'}`)
+    const written: string[] = []
+    for (const agent of chart.agents) {
+      const filePath = path.join(agentsDir, `${agent.name}.md`)
+      if (!fs.existsSync(filePath)) continue
+
+      const original = fs.readFileSync(filePath, 'utf-8')
+      const updated = replaceDelegationSection(
+        original,
+        buildDelegationSection(agent, chart.delegations, chart.agents)
+      )
+
+      if (updated !== original) {
+        fs.writeFileSync(filePath, updated)
+        written.push(filePath)
       }
     }
+
+    res.json({ ok: true, files: written, count: written.length })
+  } catch (err) {
+    res.status(500).json({ error: String(err) })
+  }
+})
+
+// Reads agents from disk and merges them with the saved chart.
+// - Agents on disk are the source of truth for content fields.
+// - Saved positions are preserved by matching on agent.name.
+// - Canvas-only agents (not yet on disk) are kept as-is.
+function mergeWithDisk(chart: OrgChart): OrgChart {
+  const dir = chart.outputDirectory ? expandHome(chart.outputDirectory) : ''
+  const agentsDir = dir ? path.join(dir, 'agents') : ''
+
+  if (!agentsDir || !fs.existsSync(agentsDir)) {
+    return chart
   }
 
-  lines.push('')
-  return lines.join('\n')
+  const savedByName = new Map(chart.agents.map((a) => [a.name, a]))
+  const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md'))
+
+  const fromDisk: Agent[] = files.map((file, idx) => {
+    const name = file.replace(/\.md$/, '')
+    const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8')
+    const parsed = parseAgentMd(content, name, idx)
+    const saved = savedByName.get(name)
+    if (saved) {
+      parsed.id = saved.id
+      parsed.position = saved.position
+    }
+    return parsed
+  })
+
+  const onDiskNames = new Set(fromDisk.map((a) => a.name))
+  const canvasOnly = chart.agents.filter((a) => !onDiskNames.has(a.name))
+
+  // Drop delegations that reference agents no longer present
+  const allIds = new Set([...fromDisk.map((a) => a.id), ...canvasOnly.map((a) => a.id)])
+  const validDelegations = chart.delegations.filter(
+    (d) => allIds.has(d.from) && allIds.has(d.to)
+  )
+
+  return {
+    ...chart,
+    agents: [...fromDisk, ...canvasOnly],
+    delegations: validDelegations,
+  }
 }

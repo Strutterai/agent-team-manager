@@ -3,10 +3,8 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
 } from '@xyflow/react'
 import type { Connection, NodeChange, EdgeChange, Edge, Node } from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
 import { useAgentStore } from '../store/agentStore'
 import { AgentNode } from './AgentNode'
 import type { AgentNodeType } from './AgentNode'
@@ -115,13 +113,8 @@ export function OrgChart() {
         fitView
         deleteKeyCode="Delete"
       >
-        <Background gap={20} color="#f1f5f9" />
-        <Controls />
-        <MiniMap
-          nodeColor={() => '#dbeafe'}
-          maskColor="rgba(255,255,255,0.7)"
-          className="!border-gray-200"
-        />
+        <Background gap={24} color="#2a3035" size={1.2} />
+        <Controls showInteractive={false} />
       </ReactFlow>
     </div>
   )
