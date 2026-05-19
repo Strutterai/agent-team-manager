@@ -1,0 +1,7 @@
+# Code owners for Agent Team Manager.
+# Every file change requires review and approval from the listed owner.
+# Format: <pattern> <@github-username>
+#
+# Reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+* @cnorris74
