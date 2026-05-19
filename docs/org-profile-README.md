@@ -1,13 +1,13 @@
-# strutter-ai GitHub Org Profile README
+# strutterai GitHub Org Profile README
 
-This file is a **template** to paste into a new GitHub repo named `.github` under your `strutter-ai` org. Specifically: create `strutter-ai/.github` and put the contents below at `profile/README.md`. GitHub will render it as the public landing page for the org at `https://github.com/strutter-ai`.
+This file is a **template** to paste into a new GitHub repo named `.github` under your `strutterai` org. Specifically: create `strutterai/.github` and put the contents below at `profile/README.md`. GitHub will render it as the public landing page for the org at `https://github.com/strutterai`.
 
 ## How to publish
 
-1. On GitHub, create a new public repo named exactly `.github` under the `strutter-ai` org
+1. On GitHub, create a new public repo named exactly `.github` under the `strutterai` org
 2. Inside that repo, create the path `profile/README.md`
 3. Paste the content between the markers below
-4. Commit. Visit `https://github.com/strutter-ai` to confirm it shows up.
+4. Commit. Visit `https://github.com/strutterai` to confirm it shows up.
 
 ---
 
@@ -29,7 +29,7 @@ We open-source the small tools we build for ourselves that work well enough that
 
 ### Active
 
-- **[agent-team-manager](https://github.com/strutter-ai/agent-team-manager)** — Visual org chart designer for Claude Code agent teams. Draw who delegates to whom, and the tool auto-syncs the delegation graph back into your `.claude/agents/*.md` files so Claude follows the chart you drew.
+- **[agent-team-manager](https://github.com/strutterai/agent-team-manager)** — Visual org chart designer for Claude Code agent teams. Draw who delegates to whom, and the tool auto-syncs the delegation graph back into your `.claude/agents/*.md` files so Claude follows the chart you drew.
 
 More to come.
 

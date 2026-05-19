@@ -7,7 +7,7 @@ Thanks for considering a contribution. This is a small project; expectations are
 Requires Node 20+.
 
 ```bash
-git clone https://github.com/strutter-ai/agent-team-manager.git
+git clone https://github.com/strutterai/agent-team-manager.git
 cd agent-team-manager
 npm install
 npm run dev

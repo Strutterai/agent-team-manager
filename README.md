@@ -18,7 +18,7 @@ Edit your agents as cards. Draw delegation lines as edges. The tool writes every
 Requires Node 20+.
 
 ```bash
-git clone https://github.com/strutter-ai/agent-team-manager.git
+git clone https://github.com/strutterai/agent-team-manager.git
 cd agent-team-manager
 npm install
 npm run dev
