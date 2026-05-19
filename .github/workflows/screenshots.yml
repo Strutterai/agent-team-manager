@@ -1,0 +1,58 @@
+name: Update Screenshot
+
+# Regenerate docs/screenshot.png from the live app and commit if it changed.
+# Runs after merge to main and can be triggered manually.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Only re-screenshot when something visual could have changed
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - '.claude/agents/**'
+      - 'e2e/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/screenshots.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: screenshots
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium --with-deps
+
+      - name: Capture screenshot
+        run: npm run screenshots
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet docs/screenshot.png; then
+            echo "Screenshot unchanged. Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshot.png
+          git commit -m "chore(docs): auto-update README screenshot [skip ci]"
+          git push

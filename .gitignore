@@ -25,3 +25,8 @@ dist-ssr
 
 # Per-user runtime state — never commit
 org-chart.json
+
+# Playwright artifacts
+test-results/
+playwright-report/
+playwright/.cache/
