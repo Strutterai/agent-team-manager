@@ -1,0 +1,49 @@
+name: Claude PR Review
+
+# Uses Anthropic's official Claude Code action to review every PR.
+# Requires a CLAUDE_CODE_OAUTH_TOKEN repo secret. Generate yours at:
+# https://github.com/anthropics/claude-code-action#getting-started
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# Don't waste tokens reviewing the same PR multiple times in parallel
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    # Skip Dependabot PRs (they don't need AI review, just merge if CI passes)
+    # and skip the auto-screenshot bot's PRs
+    if: github.event.pull_request.user.login != 'dependabot[bot]' && github.event.pull_request.user.login != 'github-actions[bot]'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are reviewing a pull request on the Agent Team Manager repo, a visual org chart designer for Claude Code agent teams.
+
+            Focus on:
+            1. **Conventions**: Does the code match the patterns already in the repo? TypeScript strict, no `any`, Tailwind for styling, named exports, no new dependencies without comment.
+            2. **Security**: Look for CORS regressions, path traversal, secrets leaks, missing input validation. The Express server runs locally with full FS access so be paranoid.
+            3. **Tests**: Are new pure functions tested? Does the existing test suite still cover the change?
+            4. **Brand**: Strutter branding (turkey logo, green #52b788, "by Strutter AI" tagline) must stay intact.
+            5. **No bloat**: Reject premature abstraction, dead code, unused vars, scope creep beyond what the PR title claims.
+
+            Post specific actionable comments tied to file paths and line numbers. Approve the PR if it's clean. Block (request changes) only for real issues, not style nits.
+
+            Be concise. The maintainer reads the comments cold.
