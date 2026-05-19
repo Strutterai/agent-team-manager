@@ -4,7 +4,11 @@
 
 Edit your agents as cards. Draw delegation lines as edges. The tool writes everything back to `.claude/agents/*.md` so Claude reads the org chart at session start and knows who delegates to whom.
 
-![Agent Team Manager screenshot](docs/screenshot.png)
+![The canvas with demo agents](docs/screenshot.png)
+
+Click any agent to edit Name, Title, Role, Responsibilities, Goals, and who they delegate to.
+
+![Agent edit panel](docs/screenshot-edit.png)
 
 ## What it does
 
