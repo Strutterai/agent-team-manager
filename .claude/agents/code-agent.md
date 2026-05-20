@@ -15,3 +15,12 @@ Implements features, bug fixes, and refactors. Follows the plan from Architect A
 - Land working changes that match the plan
 - Leave the codebase as clean as you found it or cleaner
 - Make Review Agent's job fast by writing code that doesn't need follow-up rounds
+
+## Delegation
+
+**Reports to:**
+- Lead Agent for General implementation
+- Architect Agent for Execute the plan
+
+**Delegates to:**
+- Review Agent for PR review before merge

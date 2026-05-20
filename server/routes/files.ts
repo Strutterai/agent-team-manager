@@ -8,9 +8,13 @@ import {
   parseAgentMd,
   replaceDelegationSection,
 } from '../lib/agent-md.js'
-import { expandHome } from '../lib/paths.js'
+import { expandHome, safeAgentName, safeChildPath } from '../lib/paths.js'
 
 export const router = Router()
+
+// Same charset as safeAgentName. Used inline to filter readdir results
+// so we never touch a file with a suspicious name even by accident.
+const SAFE_NAME_RE = /^[a-zA-Z0-9_-]+$/
 
 const CHART_FILE = path.join(process.cwd(), 'org-chart.json')
 
@@ -61,16 +65,17 @@ router.post('/reload', (req: Request, res: Response) => {
 router.post('/export', (req: Request, res: Response) => {
   try {
     const chart: OrgChart = req.body
-    const agentsDir = path.join(expandHome(chart.outputDirectory), 'agents')
+    const agentsDir = safeChildPath(expandHome(chart.outputDirectory), 'agents')
 
     fs.mkdirSync(agentsDir, { recursive: true })
 
     const written: string[] = []
-    const currentNames = new Set(chart.agents.map((a) => a.name))
+    const currentNames = new Set(chart.agents.map((a) => safeAgentName(a.name)))
 
     for (const agent of chart.agents) {
+      const safeName = safeAgentName(agent.name)
       const content = buildClaudeMd(agent, chart.delegations, chart.agents)
-      const filePath = path.join(agentsDir, `${agent.name}.md`)
+      const filePath = safeChildPath(agentsDir, `${safeName}.md`)
       fs.writeFileSync(filePath, content)
       written.push(filePath)
     }
@@ -78,7 +83,10 @@ router.post('/export', (req: Request, res: Response) => {
     // Remove stale files left over from renames
     for (const file of fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md'))) {
       const name = file.replace(/\.md$/, '')
-      if (!currentNames.has(name)) fs.unlinkSync(path.join(agentsDir, file))
+      if (!SAFE_NAME_RE.test(name)) continue
+      if (!currentNames.has(name)) {
+        fs.unlinkSync(safeChildPath(agentsDir, `${name}.md`))
+      }
     }
 
     res.json({ ok: true, files: written })
@@ -98,15 +106,17 @@ router.post('/save-agent', (req: Request, res: Response) => {
       delegations: Delegation[]
       oldName?: string
     }
-    const agentsDir = path.join(expandHome(outputDirectory), 'agents')
+    const safeName = safeAgentName(agent.name)
+    const agentsDir = safeChildPath(expandHome(outputDirectory), 'agents')
     fs.mkdirSync(agentsDir, { recursive: true })
 
     if (oldName && oldName !== agent.name) {
-      const oldPath = path.join(agentsDir, `${oldName}.md`)
+      const safeOld = safeAgentName(oldName)
+      const oldPath = safeChildPath(agentsDir, `${safeOld}.md`)
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
     }
 
-    const filePath = path.join(agentsDir, `${agent.name}.md`)
+    const filePath = safeChildPath(agentsDir, `${safeName}.md`)
     const content = buildClaudeMd(agent, delegations, agents)
     fs.writeFileSync(filePath, content)
 
@@ -121,7 +131,7 @@ router.post('/save-agent', (req: Request, res: Response) => {
 router.post('/sync-delegations', (req: Request, res: Response) => {
   try {
     const chart: OrgChart = req.body
-    const agentsDir = path.join(expandHome(chart.outputDirectory), 'agents')
+    const agentsDir = safeChildPath(expandHome(chart.outputDirectory), 'agents')
 
     if (!fs.existsSync(agentsDir)) {
       return res.status(404).json({ error: `No agents/ folder at ${agentsDir}` })
@@ -129,7 +139,8 @@ router.post('/sync-delegations', (req: Request, res: Response) => {
 
     const written: string[] = []
     for (const agent of chart.agents) {
-      const filePath = path.join(agentsDir, `${agent.name}.md`)
+      const safeName = safeAgentName(agent.name)
+      const filePath = safeChildPath(agentsDir, `${safeName}.md`)
       if (!fs.existsSync(filePath)) continue
 
       const original = fs.readFileSync(filePath, 'utf-8')
@@ -156,18 +167,22 @@ router.post('/sync-delegations', (req: Request, res: Response) => {
 // - Canvas-only agents (not yet on disk) are kept as-is.
 function mergeWithDisk(chart: OrgChart): OrgChart {
   const dir = chart.outputDirectory ? expandHome(chart.outputDirectory) : ''
-  const agentsDir = dir ? path.join(dir, 'agents') : ''
+  const agentsDir = dir ? safeChildPath(dir, 'agents') : ''
 
   if (!agentsDir || !fs.existsSync(agentsDir)) {
     return chart
   }
 
   const savedByName = new Map(chart.agents.map((a) => [a.name, a]))
-  const files = fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md'))
+  const files = fs
+    .readdirSync(agentsDir)
+    .filter((f) => f.endsWith('.md'))
+    .filter((f) => SAFE_NAME_RE.test(f.replace(/\.md$/, '')))
 
   const fromDisk: Agent[] = files.map((file, idx) => {
     const name = file.replace(/\.md$/, '')
-    const content = fs.readFileSync(path.join(agentsDir, file), 'utf-8')
+    const filePath = safeChildPath(agentsDir, file)
+    const content = fs.readFileSync(filePath, 'utf-8')
     const parsed = parseAgentMd(content, name, idx)
     const saved = savedByName.get(name)
     if (saved) {
