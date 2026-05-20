@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import path from 'path'
-import { expandHome } from './paths.js'
+import { expandHome, safeAgentName, safeChildPath } from './paths.js'
 
 describe('expandHome', () => {
   const HOME = '/Users/test'
@@ -62,5 +62,96 @@ describe('expandHome', () => {
   it('does NOT reject paths whose names happen to start with a blocked prefix', () => {
     // /etcetera is fine; only path-segment matches should block
     expect(expandHome('/etcetera', HOME)).toBe('/etcetera')
+  })
+})
+
+describe('safeAgentName', () => {
+  it.each([
+    'code-agent',
+    'review_agent',
+    'frontend',
+    'a',
+    'ABC123',
+    'mixed_case-Name42',
+  ])('accepts valid name: %s', (name) => {
+    expect(safeAgentName(name)).toBe(name)
+  })
+
+  it.each([
+    '',
+    '../etc/passwd',
+    'agent/with/slash',
+    'agent\\with\\backslash',
+    'agent.with.dots',
+    'agent with spaces',
+    'agent\nname',
+    '..',
+    '.',
+    '$malicious',
+    'agent;rm -rf',
+  ])('rejects invalid name: %s', (name) => {
+    expect(() => safeAgentName(name)).toThrow()
+  })
+
+  it('rejects names longer than 128 chars', () => {
+    expect(() => safeAgentName('a'.repeat(129))).toThrow(/128 characters/)
+  })
+
+  it('accepts the boundary length', () => {
+    const name = 'a'.repeat(128)
+    expect(safeAgentName(name)).toBe(name)
+  })
+
+  it('rejects non-string input', () => {
+    // @ts-expect-error testing runtime guard
+    expect(() => safeAgentName(null)).toThrow()
+    // @ts-expect-error testing runtime guard
+    expect(() => safeAgentName(undefined)).toThrow()
+    // @ts-expect-error testing runtime guard
+    expect(() => safeAgentName(42)).toThrow()
+  })
+})
+
+describe('safeChildPath', () => {
+  it('resolves a normal child inside the root', () => {
+    expect(safeChildPath('/Users/test/proj', 'agents')).toBe('/Users/test/proj/agents')
+  })
+
+  it('resolves a multi-segment child', () => {
+    expect(safeChildPath('/Users/test/proj', 'agents/code-agent.md')).toBe(
+      '/Users/test/proj/agents/code-agent.md'
+    )
+  })
+
+  it('returns the root itself when child is "."', () => {
+    expect(safeChildPath('/Users/test/proj', '.')).toBe('/Users/test/proj')
+  })
+
+  it('throws when child escapes via ..', () => {
+    expect(() => safeChildPath('/Users/test/proj', '../other')).toThrow(/escapes root/)
+  })
+
+  it('throws when child is an absolute path outside the root', () => {
+    expect(() => safeChildPath('/Users/test/proj', '/etc/passwd')).toThrow(/escapes root/)
+  })
+
+  it('throws when child uses .. deeper than the root depth', () => {
+    expect(() => safeChildPath('/Users/test/proj', '../../../../etc/passwd')).toThrow(
+      /escapes root/
+    )
+  })
+
+  it('does not confuse sibling-prefix paths with containment', () => {
+    // /Users/test/projects is NOT inside /Users/test/proj
+    expect(() =>
+      safeChildPath('/Users/test/proj', '../projects/other')
+    ).toThrow(/escapes root/)
+  })
+
+  it('resolves .. that stays within the root', () => {
+    // agents/../docs is within /Users/test/proj
+    expect(safeChildPath('/Users/test/proj', 'agents/../docs')).toBe(
+      '/Users/test/proj/docs'
+    )
   })
 })
