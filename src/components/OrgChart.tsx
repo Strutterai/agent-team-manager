@@ -1,8 +1,10 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
+  useReactFlow,
 } from '@xyflow/react'
 import type { Connection, NodeChange, EdgeChange, Edge, Node } from '@xyflow/react'
 import { useAgentStore } from '../store/agentStore'
@@ -13,7 +15,7 @@ import { DelegationEdge } from './DelegationEdge'
 const nodeTypes = { agent: AgentNode }
 const edgeTypes = { delegation: DelegationEdge }
 
-export function OrgChart() {
+function OrgChartInner() {
   const agents = useAgentStore((s) => s.agents)
   const delegations = useAgentStore((s) => s.delegations)
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId)
@@ -98,6 +100,15 @@ export function OrgChart() {
     selectAgent(null)
   }, [selectAgent])
 
+  const { fitView } = useReactFlow()
+  const hasFit = useRef(false)
+  useEffect(() => {
+    if (agents.length > 0 && !hasFit.current) {
+      hasFit.current = true
+      setTimeout(() => fitView({ padding: 0.1, duration: 300 }), 50)
+    }
+  }, [agents.length, fitView])
+
   return (
     <div className="h-full w-full">
       <ReactFlow
@@ -117,5 +128,13 @@ export function OrgChart() {
         <Controls showInteractive={false} />
       </ReactFlow>
     </div>
+  )
+}
+
+export function OrgChart() {
+  return (
+    <ReactFlowProvider>
+      <OrgChartInner />
+    </ReactFlowProvider>
   )
 }
