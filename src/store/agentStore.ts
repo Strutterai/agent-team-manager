@@ -94,6 +94,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   setOutputDir: (dir) => {
     set({ outputDirectory: dir })
+    get().saveChart()
     debouncedReload(get, dir)
   },
 

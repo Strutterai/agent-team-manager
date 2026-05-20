@@ -3,6 +3,7 @@ import path from 'path'
 
 const CANVAS_SCREENSHOT = path.join(process.cwd(), 'docs', 'screenshot.png')
 const EDIT_SCREENSHOT = path.join(process.cwd(), 'docs', 'screenshot-edit.png')
+const SOCIAL_PREVIEW = path.join(process.cwd(), 'docs', 'social-preview.png')
 const DEMO_DIR = path.join(process.cwd(), '.claude')
 const API = 'http://localhost:3001'
 
@@ -83,6 +84,26 @@ test('main canvas screenshot', async ({ page, request }) => {
 
   const fs = await import('fs')
   expect(fs.statSync(CANVAS_SCREENSHOT).size).toBeGreaterThan(10_000)
+})
+
+test('social preview image (1280x640)', async ({ page, request }) => {
+  // GitHub social preview is 1280x640. Twitter/LinkedIn pull this for
+  // link previews. Bigger, cleaner framing than the README screenshot.
+  await page.setViewportSize({ width: 1280, height: 640 })
+  await setupDemoCanvas(page, request)
+
+  await page.locator('.react-flow__controls-fitview').click()
+  await page.waitForTimeout(800)
+
+  await page.screenshot({
+    path: SOCIAL_PREVIEW,
+    fullPage: false,
+    animations: 'disabled',
+    clip: { x: 0, y: 0, width: 1280, height: 640 },
+  })
+
+  const fs = await import('fs')
+  expect(fs.statSync(SOCIAL_PREVIEW).size).toBeGreaterThan(10_000)
 })
 
 test('edit panel screenshot', async ({ page, request }) => {
