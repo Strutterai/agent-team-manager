@@ -5,6 +5,10 @@ on:
   push:
     branches: [main]
 
+# Least-privilege: this workflow only needs to read repo contents.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest

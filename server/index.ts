@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import rateLimit from 'express-rate-limit'
 import { router as filesRouter } from './routes/files.js'
 
 const app = express()
@@ -16,6 +17,19 @@ app.use(
 
 // Bind to loopback only so the server is never exposed on the network.
 app.use(express.json({ limit: '10mb' }))
+
+// Defense in depth: even though the server is loopback-only with CORS
+// locked to the dev frontend, cap request volume to prevent runaway
+// loops in the UI from hammering the filesystem.
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 60_000,
+    max: 600,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+)
 app.use('/api', filesRouter)
 
 app.listen(PORT, '127.0.0.1', () => {
