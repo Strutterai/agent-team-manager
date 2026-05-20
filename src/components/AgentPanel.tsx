@@ -13,12 +13,12 @@ export function AgentPanel() {
   const updateDelegation = useAgentStore((s) => s.updateDelegation)
   const removeDelegation = useAgentStore((s) => s.removeDelegation)
 
+  const agent = agents.find((a) => a.id === selectedId)
+
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errMsg, setErrMsg] = useState('')
   const [savedName, setSavedName] = useState(agent?.name ?? '')
-
-  const agent = agents.find((a) => a.id === selectedId)
 
   if (!agent) {
     return (
