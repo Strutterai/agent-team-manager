@@ -16,6 +16,7 @@ export function AgentPanel() {
   const [saving, setSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errMsg, setErrMsg] = useState('')
+  const [savedName, setSavedName] = useState(agent?.name ?? '')
 
   const agent = agents.find((a) => a.id === selectedId)
 
@@ -38,14 +39,16 @@ export function AgentPanel() {
   const handleSave = async () => {
     setSaving(true)
     setSaveStatus('idle')
+    const oldName = savedName !== agent.name ? savedName : undefined
     try {
       const res = await fetch('/api/save-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outputDirectory, agent, agents, delegations }),
+        body: JSON.stringify({ outputDirectory, agent, agents, delegations, oldName }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Save failed')
+      setSavedName(agent.name)
       setSaveStatus('success')
       setTimeout(() => setSaveStatus('idle'), 2500)
     } catch (err) {

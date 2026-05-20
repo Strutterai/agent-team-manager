@@ -66,11 +66,19 @@ router.post('/export', (req: Request, res: Response) => {
     fs.mkdirSync(agentsDir, { recursive: true })
 
     const written: string[] = []
+    const currentNames = new Set(chart.agents.map((a) => a.name))
+
     for (const agent of chart.agents) {
       const content = buildClaudeMd(agent, chart.delegations, chart.agents)
       const filePath = path.join(agentsDir, `${agent.name}.md`)
       fs.writeFileSync(filePath, content)
       written.push(filePath)
+    }
+
+    // Remove stale files left over from renames
+    for (const file of fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md'))) {
+      const name = file.replace(/\.md$/, '')
+      if (!currentNames.has(name)) fs.unlinkSync(path.join(agentsDir, file))
     }
 
     res.json({ ok: true, files: written })
@@ -83,14 +91,20 @@ router.post('/export', (req: Request, res: Response) => {
 // from the panel state and creates the file if it doesn't exist.
 router.post('/save-agent', (req: Request, res: Response) => {
   try {
-    const { outputDirectory, agent, agents, delegations } = req.body as {
+    const { outputDirectory, agent, agents, delegations, oldName } = req.body as {
       outputDirectory: string
       agent: Agent
       agents: Agent[]
       delegations: Delegation[]
+      oldName?: string
     }
     const agentsDir = path.join(expandHome(outputDirectory), 'agents')
     fs.mkdirSync(agentsDir, { recursive: true })
+
+    if (oldName && oldName !== agent.name) {
+      const oldPath = path.join(agentsDir, `${oldName}.md`)
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath)
+    }
 
     const filePath = path.join(agentsDir, `${agent.name}.md`)
     const content = buildClaudeMd(agent, delegations, agents)
