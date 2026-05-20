@@ -10,6 +10,12 @@ updates:
       prefix: deps
       prefix-development: deps-dev
       include: scope
+    ignore:
+      # Keep @types/node aligned with the runtime Node version (engines: >=20).
+      # Bumping the typings major would let typecheck accept APIs that don't
+      # exist at runtime. Allow patch and minor only.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       # Bundle minor + patch updates into one PR per ecosystem to reduce noise
       dev-dependencies:
