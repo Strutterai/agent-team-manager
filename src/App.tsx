@@ -3,11 +3,13 @@ import { useAgentStore } from './store/agentStore'
 import { OrgChart } from './components/OrgChart'
 import { AgentPanel } from './components/AgentPanel'
 import { Toolbar } from './components/Toolbar'
+import { TimelineView } from './components/TimelineView'
 import type { OrgChart as OrgChartType } from './types/agent'
 
 export default function App() {
   const loadChart = useAgentStore((s) => s.loadChart)
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId)
+  const currentView = useAgentStore((s) => s.currentView)
 
   useEffect(() => {
     fetch('/api/chart')
@@ -21,7 +23,7 @@ export default function App() {
       <Toolbar />
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-hidden">
-          <OrgChart />
+          {currentView === 'org' ? <OrgChart /> : <TimelineView />}
         </div>
         {selectedAgentId && (
           <div className="w-96 shrink-0 overflow-y-auto border-l border-border-1 bg-surface-2 shadow-2xl">

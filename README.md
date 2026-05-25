@@ -14,8 +14,11 @@ Click any agent to edit Name, Title, Role, Responsibilities, Goals, and who they
 
 - **Visual canvas** — every agent is a card. Drag to rearrange. Click to edit Name, Title, Role, Responsibilities, Goals.
 - **Draw delegation lines** — connect any two agents and label the relationship. Lines auto-save to each agent's `## Delegation` section so Claude reads them.
+- **Session Replay** — switch tabs to play back a real Claude Code session as a swimlane timeline. One lane per agent on the chart (plus a "main thread" lane), with markers for every tool use, skill, hook firing, and delegation. Subagent types without a matching org-chart card surface as "(not in org chart)" so coverage gaps are visible at a glance.
 - **Live filesystem** — the tool reads and writes `.claude/agents/*.md` directly. There's no separate database. Edit a file in your editor, reload the canvas, your change shows up.
 - **Bootstrap with Claude** — first time using it? Click "⚡ Bootstrap with Claude" in the toolbar to get a ready-to-paste prompt that has Claude design and write your initial team.
+
+![Session Replay timeline](docs/screenshot-timeline.png)
 
 ## Quick start
 

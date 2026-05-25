@@ -1,8 +1,32 @@
 import { create } from 'zustand'
-import type { Agent, Delegation, OrgChart } from '../types/agent'
+import type {
+  Agent,
+  Delegation,
+  OrgChart,
+  SessionMeta,
+  TimelineEvent,
+} from '../types/agent'
+
+export type AppView = 'org' | 'timeline'
 
 interface AgentStore extends OrgChart {
   selectedAgentId: string | null
+
+  // View
+  currentView: AppView
+  setView: (v: AppView) => void
+
+  // Session replay
+  sessions: SessionMeta[]
+  activeSessionId: string | null
+  timelineEvents: TimelineEvent[]
+  timelineLaneKeys: string[]
+  timelineLoading: boolean
+  timelineError: string | null
+  inspectedEventId: string | null
+  loadSessions: () => Promise<void>
+  loadSession: (sessionId: string) => Promise<void>
+  setInspectedEvent: (id: string | null) => void
 
   // Hydration
   loadChart: (chart: OrgChart) => void
@@ -32,6 +56,45 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   agents: [],
   delegations: [],
   selectedAgentId: null,
+
+  currentView: 'org',
+  setView: (v) => set({ currentView: v }),
+
+  sessions: [],
+  activeSessionId: null,
+  timelineEvents: [],
+  timelineLaneKeys: [],
+  timelineLoading: false,
+  timelineError: null,
+  inspectedEventId: null,
+  setInspectedEvent: (id) => set({ inspectedEventId: id }),
+
+  loadSessions: async () => {
+    try {
+      const res = await fetch('/api/sessions')
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to list sessions')
+      set({ sessions: data.sessions, timelineError: null })
+    } catch (err) {
+      set({ timelineError: String(err) })
+    }
+  },
+
+  loadSession: async (sessionId) => {
+    set({ timelineLoading: true, timelineError: null, activeSessionId: sessionId })
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to load session')
+      set({
+        timelineEvents: data.events,
+        timelineLaneKeys: data.laneKeys,
+        timelineLoading: false,
+      })
+    } catch (err) {
+      set({ timelineError: String(err), timelineLoading: false })
+    }
+  },
 
   loadChart: (chart) => set({ ...chart }),
 

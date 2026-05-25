@@ -9,6 +9,8 @@ export function Toolbar() {
   const setOutputDir = useAgentStore((s) => s.setOutputDir)
   const agents = useAgentStore((s) => s.agents)
   const delegations = useAgentStore((s) => s.delegations)
+  const currentView = useAgentStore((s) => s.currentView)
+  const setView = useAgentStore((s) => s.setView)
 
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
   const [showSetupPrompt, setShowSetupPrompt] = useState(false)
@@ -46,6 +48,35 @@ export function Toolbar() {
             by Strutter AI
           </span>
         </div>
+      </div>
+
+      <div className="h-6 w-px bg-border-1 mx-1" />
+
+      <div role="tablist" className="flex rounded-md border border-border-1 bg-surface-2 p-0.5">
+        <button
+          role="tab"
+          aria-selected={currentView === 'org'}
+          onClick={() => setView('org')}
+          className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
+            currentView === 'org'
+              ? 'bg-brand text-surface-0'
+              : 'text-text-2 hover:text-text-1'
+          }`}
+        >
+          Org Chart
+        </button>
+        <button
+          role="tab"
+          aria-selected={currentView === 'timeline'}
+          onClick={() => setView('timeline')}
+          className={`rounded px-3 py-1 text-xs font-semibold transition-colors ${
+            currentView === 'timeline'
+              ? 'bg-brand text-surface-0'
+              : 'text-text-2 hover:text-text-1'
+          }`}
+        >
+          Session Replay
+        </button>
       </div>
 
       <div className="h-6 w-px bg-border-1 mx-1" />

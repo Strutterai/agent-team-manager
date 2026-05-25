@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import rateLimit from 'express-rate-limit'
 import { router as filesRouter } from './routes/files.js'
+import { router as sessionsRouter } from './routes/sessions.js'
 
 const app = express()
 const PORT = 3001
@@ -31,6 +32,7 @@ app.use(
   })
 )
 app.use('/api', filesRouter)
+app.use('/api', sessionsRouter)
 
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`Agent Team Manager server running on http://localhost:${PORT}`)
